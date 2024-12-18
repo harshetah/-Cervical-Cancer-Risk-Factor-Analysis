@@ -1,0 +1,428 @@
+---
+title: "Hackathon - Group 28"
+author: "Gautam Reddy Chandupatla, Harsh Mahajan, Harshita Mishra"
+date: "2023-02-08"
+output: html_document
+---
+### Contents
+#### 1. Introduction                                                    
+#### 2. About the Dataset
+#### 3. Output
+
+##### 3.1 Section 1 - Age and Lifestyle
+##### 3.2 Section 2 - Sexually Transmitted Diseases (STDs)
+##### 3.3 Section 3 - Medical Examinations 
+
+#### 4. Conclusion
+#### 5. References
+
+
+### 1. Introduction
+
+Cervical cancer is cancer of the cells in the cervix, which is the lower part of the uterus and connects the vagina to the uterus. About 11,000 new cases of invasive cervical cancer are diagnosed each year in the U.S. However, the number of new cervical cancer cases has been declining steadily over the past decades. Although it is the most preventable type of cancer, each year cervical cancer kills about 4,000 women in the U.S. and about 300,000 women worldwide. In this report, we will discuss about some major risk factors that lead to Cervical Cancer. 
+
+
+### 2. About the Dataset
+This dataset is obtained from UCI repository which contains a list of risk factors for Cervical Cancer leading to a Biopsy Examination. This dataset contains 858 rows and 36 columns. 
+
+
+### 3. Output
+
+#### 3.1 Section - 1: Age and Lifestyle
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(ggridges)
+library(treemapify)
+library(treemap)
+library(plotly)
+library(reshape2)
+library(ggalluvial)
+library(corrplot)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#Data cleaning process
+
+df_cervical <- read.csv('/Users/gautam/Downloads/kag_risk_factors_cervical_cancer.csv', na.strings = "?")
+
+data <- df_cervical
+
+#Check percentage of missing value in each column
+#(colMeans(is.na(data)))*100
+
+#Drop column STDs..Time.since.first.diagnosis and  STDs..Time.since.last.diagnosis : 91% misssing values
+data = subset(data, select = -c(27,28))
+
+#Convert to factor variables
+names <- c('Smokes','Hormonal.Contraceptives','IUD','STDs','Dx.Cancer','Dx.CIN','Dx.HPV','Dx','Hinselmann','Schiller','Citology','Biopsy')
+
+data <- data %>% mutate_at(names, as.factor) 
+data <- data %>% mutate_at(c(14:25),as.factor)
+
+
+#Function to calculate mode 
+calc_mode <- function(x){
+  distinct_values <- unique(x)
+  distinct_tabulate <- tabulate(match(x, distinct_values))
+  distinct_values[which.max(distinct_tabulate)]
+}
+
+#Replacing NA values with mode for all factor columns
+data <- data %>% 
+  mutate(STDs.condylomatosis = if_else(is.na(STDs.condylomatosis), calc_mode(STDs.condylomatosis),STDs.condylomatosis)) %>%
+  mutate(STDs.cervical.condylomatosis = if_else(is.na(STDs.cervical.condylomatosis), calc_mode(STDs.cervical.condylomatosis),STDs.cervical.condylomatosis)) %>%
+  mutate(STDs.vaginal.condylomatosis = if_else(is.na(STDs.vaginal.condylomatosis), calc_mode(STDs.vaginal.condylomatosis),STDs.vaginal.condylomatosis)) %>%
+  mutate(STDs.vulvo.perineal.condylomatosis = if_else(is.na(STDs.vulvo.perineal.condylomatosis), calc_mode(STDs.vulvo.perineal.condylomatosis),STDs.vulvo.perineal.condylomatosis)) %>%
+  mutate(STDs.syphilis = if_else(is.na(STDs.syphilis), calc_mode(STDs.syphilis),STDs.syphilis)) %>%
+  mutate(STDs.pelvic.inflammatory.disease = if_else(is.na(STDs.pelvic.inflammatory.disease), calc_mode(STDs.pelvic.inflammatory.disease),STDs.pelvic.inflammatory.disease)) %>%
+  mutate(STDs.genital.herpes = if_else(is.na(STDs.genital.herpes), calc_mode(STDs.genital.herpes),STDs.genital.herpes)) %>%
+  mutate(STDs.molluscum.contagiosum = if_else(is.na(STDs.molluscum.contagiosum), calc_mode(STDs.molluscum.contagiosum),STDs.molluscum.contagiosum)) %>%
+  mutate(STDs.AIDS = if_else(is.na(STDs.AIDS), calc_mode(STDs.AIDS),STDs.AIDS)) %>%
+  mutate(STDs.HIV = if_else(is.na(STDs.HIV), calc_mode(STDs.HIV),STDs.HIV)) %>%
+  mutate(STDs.Hepatitis.B = if_else(is.na(STDs.Hepatitis.B), calc_mode(STDs.Hepatitis.B),STDs.Hepatitis.B)) %>%
+  mutate(STDs.HPV = if_else(is.na(STDs.HPV), calc_mode(STDs.HPV),STDs.HPV)) %>%
+  mutate(Smokes = if_else(is.na(Smokes), calc_mode(Smokes),Smokes)) %>%
+  mutate(Hormonal.Contraceptives = if_else(is.na(Hormonal.Contraceptives), calc_mode(Hormonal.Contraceptives),Hormonal.Contraceptives)) %>%
+  mutate(IUD = if_else(is.na(IUD), calc_mode(IUD),IUD)) %>%
+  mutate(STDs = if_else(is.na(STDs), calc_mode(STDs),STDs)) 
+
+#Replacing NA values with mean for all numeric columns
+data$Number.of.sexual.partners[is.na(data$Number.of.sexual.partners)] <- mean(data$Number.of.sexual.partners, na.rm = TRUE)
+data$First.sexual.intercourse[is.na(data$First.sexual.intercourse)] <- mean(data$First.sexual.intercourse, na.rm = TRUE)
+data$Num.of.pregnancies[is.na(data$Num.of.pregnancies)] <- mean(data$Num.of.pregnancies, na.rm = TRUE)
+data$Smokes..years.[is.na(data$Smokes..years.)] <- mean(data$Smokes..years., na.rm = TRUE)
+data$Smokes..packs.year.[is.na(data$Smokes..packs.year.)] <- mean(data$Smokes..packs.year., na.rm = TRUE)
+data$Hormonal.Contraceptives..years.[is.na(data$Hormonal.Contraceptives..years.)] <- mean(data$Hormonal.Contraceptives..years., na.rm = TRUE)
+data$IUD..years.[is.na(data$IUD..years.)] <- mean(data$IUD..years., na.rm = TRUE)
+data$STDs..number.[is.na(data$STDs..number.)] <- mean(data$STDs..number., na.rm = TRUE)
+
+#Rounding off the mean in numeric columns since no numeric columns can have decimal values
+data <- data %>% 
+  mutate_if(is.numeric, round)
+```
+
+#### Is "AGE" of a women a risk factor for cervical cancer?
+
+We will be analyzing the data for patients who have higher risk of cervical cancer. Here the data is filtered based on our requirement and the following boxplots are generated. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+df_1 <- data
+
+df_1 <- df_1 %>% 
+  pivot_longer(c(34), names_to = "Examination", values_to = "Status", values_drop_na = TRUE) %>%
+  filter(Status=="1") %>%
+  arrange(desc(Examination))
+
+boxplot(df_1$Age,
+        df_1$First.sexual.intercourse,
+        main = "Boxplot of Women diagnosed with Cervical Cancer",
+        at = c(1,2),
+        names = c("Age", "Age at 
+        First 
+        sexual 
+        inter-
+        course"),
+        las = 2,
+        xlab = "Age",
+        col = c("#FFC0CB","#F3CFC6"),
+        border = "black",
+        horizontal = TRUE,
+        notch = TRUE,
+        ylim = c(10, 55)
+)
+```
+
+From this boxplot, the median age of women having first sexual intercourse is at 17 years old, are twice as likely to get cervical cancer later than women who didn't have their first intercourse until 20 years or older. This maybe because many women fail to receive the sexual health information, education, and access to the care they need to lead healthy lives. The risk of cervical cancer can be reduced by giving awareness to women about sex education. There are some outliers, and it is difficult to predict the reason as we don't know the complete medical history of the patient.
+
+
+Secondly, here we can notice that the risk of Cervical cancer is most often diagnosed between the ages of 21 and 34, with the median age of affected women being 28 years. About 25% of women are prone to be diagnosed after the age 35. These cases usually occur in people who did not receive regular screening tests. The reason for low screening tests may be due to high poverty levels. Other factors such as lack of health insurance, limited transportation, and language difficulties also effects a poor woman’s access to screening services.
+
+
+#### Is there a risk involved in having more sexual partners and pregnancies?
+
+Our analysis here is confined to patients who have a risk of cervical cancer.
+
+
+```{r,echo=FALSE, warning=FALSE, message=FALSE}
+
+df_2 <- data
+
+df_2 <- df_2 %>% 
+  pivot_longer(c(34), names_to = "Examination", values_to = "Status", values_drop_na = TRUE) %>%
+  filter(Status=="1") %>%
+  arrange(desc(Examination))
+
+
+s1 <- ggplot(df_2, aes(x=Number.of.sexual.partners, y=Age)) + 
+  geom_point(na.rm = TRUE, stat = "identity", color="#DA70D6") +
+  scale_x_continuous(breaks = seq(0, 8, 1), 
+                     limits=c(0, 8)) +
+  scale_y_continuous(breaks = seq(10, 60, 5), 
+                     limits=c(10, 60))+
+  geom_smooth(method=lm, se=FALSE, col='#FF7F50', linetype='dashed') +
+  theme_bw()
+
+
+s2 <- ggplot(df_2, aes(x=Num.of.pregnancies, y=Age)) + 
+  geom_point(na.rm = TRUE, stat = "identity", color="#E0115F") +
+  scale_x_continuous(breaks = seq(0, 8, 1), 
+                     limits=c(0, 8)) +
+  scale_y_continuous(breaks = seq(10, 60, 5), 
+                     limits=c(10, 60))+
+  geom_smooth(method=lm, se=FALSE, col='#FF7F50', linetype='dashed') +
+  theme_bw()
+
+grid.arrange(s1, s2, ncol=2, top=("Scattered plots showing number of sexual partners and 
+number of pregnancies along with age of women having risk of cervical cancer"))
+```
+
+We have maintained same scale in both plots in order to simplify our visualization.
+
+From this plot we can conclude that women who have had three or more pregnancies are more likely to develop cervical cancer. This is probably due to the increased exposure to HPV infection with sexual activity. Also hormonal changes during pregnancy is possibly making women more susceptible to HPV infection or cancer growth. Another thought is that pregnant women might have weaker immune systems, allowing for HPV infection and cancer growth. 
+
+
+Former graph shows median number of sexual partners is 3. Women who have had three or more sexual partners are more likely to develop cervical cancer. In case of higher sexual partners there is a higher risk of having HPV and other STDs. These diseases play a vital roles in causing cervical cancer, which will be discussed in detailed in section-2.
+
+
+#### Does smoking causes risk of cervical cancer? 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+df_3 <- df_cervical
+
+df_3 <- df_3 %>% 
+  pivot_longer(c(36), names_to = "Examination", values_to = "Status", values_drop_na = TRUE) %>%
+  filter(Status=="1",Smokes=="1") %>%
+  arrange(desc(Examination))
+
+df_3$Smokes..packs.year. <- ceiling(df_3$Smokes..packs.year.)
+df_3$Smokes..packs.year. <- as.character(df_3$Smokes..packs.year.)
+
+temp_df <- df_3 %>%
+  group_by(Smokes..packs.year.) %>%
+  summarise(num_of_packs = num <- n()) %>%
+  arrange(num_of_packs)%>%
+  slice(2:6)%>%
+  arrange(desc(Smokes..packs.year.))
+
+temp_df$smoke_freq <- cumsum(temp_df$num_of_packs)
+
+temp_df <- temp_df%>%
+  arrange(Smokes..packs.year.)%>%
+  slice(1:3)
+
+temp_df <- temp_df%>%
+  mutate(Percentage = (smoke_freq/sum(smoke_freq))*100)%>%
+  arrange(desc(Percentage))
+
+
+temp_df$fraction <- temp_df$Percentage / sum(temp_df$Percentage)
+
+temp_df$ymax <- cumsum(temp_df$fraction)
+
+temp_df$ymin <- c(0, head(temp_df$ymax, n=-1))
+
+temp_df$label <- c("More than 1", "More than 2","More than 3")
+ 
+ggplot(temp_df, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill = label)) +
+     geom_rect(color="#FAA0A0") +
+     coord_polar(theta="y") +
+     xlim(c(2, 4)) +
+    theme_void() +
+  labs(fill="Smokes (packs/year)") +
+  ggtitle("Risk of Smoking on Cervical Cancer") +
+  scale_fill_manual(values = c("#FF69B4","#FFB6C1","#D8BFD8")) +
+  geom_label(aes(label=paste(fraction*100,"%"),x=3.5,y=(ymin+ymax)/2),inherit.aes = TRUE, show.legend = FALSE)
+  
+```
+
+
+The above donut chart is plotted for patients who have risk of cervical cancer, it can be observed that 45% women smoke more than 1 pack/year, 35% smoke more than 2 packs/year, 20% smoke more than 3 packs/year. Here the number of smoke packs increases the risk of cervical cancer. This is because smoking allows cancer causing chemicals to be absorbed through the lungs and carried in the blood stream throughout the body. Tobacco by-products can be found in the cervical mucus of women who smoke.
+
+
+Apart from cervical cancer, smoking also increases the risk of developing other diseases like lung cancer, lung disease, heart disease and other major health issues. It is never easy to quit smoking, especially if you have been a smoker for a long time and it has become part of your routine. So if a women is smoking, then she is advised to have her screening tests done regularly.  
+
+
+#### Section 2 - Sexually Transmitted Diseases (STDs)
+
+#### Which STDs increase chance of cervical cancer?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+test <- data %>% pivot_longer(c(14:25), names_to = 'STD_names', values_to = 'Count')
+newtest <- test %>% filter(Count == 1 & Biopsy == '1')
+newdf <- newtest %>% group_by(STD_names) %>% summarise(Cases = n())
+ggplot(newdf, aes(x = reorder(STD_names,Cases), y = Cases,fill = STD_names)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  xlab('STD Names') +
+  ylab('Number of Cases') +
+  ggtitle("Most common STDs found in Cervical Cancer patients") + theme(legend.position="none") +
+  scale_y_continuous(breaks = seq(0, 8, by = 1)) +
+  scale_fill_manual(values = c("#FF69B4", "#E37383", "#DA70D6", "#AA336A"))
+```
+
+The visualization above shows the most common STDs found in patients at risk of cervical cancer. Vulvo Perineal Condylomatosis and condylomatosis are both types of the HPV virus (Human papillomavirus). The HPV virus has been linked strongly with the risk of cervical cancer. As a domino effect, having multiple sexual partners has also been identified as a key factor in at risk patients. 
+
+Having a compromised immune system is also a factor hence 3rd on the list is the HIV virus (human immunodeficiency virus). As the name suggests, this virus makes the pateint immuno-compromsied, hence making vulnerable to several infections one of which can be HPV or other STDs. 
+
+
+#### Can STDs cause cervical cancer?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+positive <- data %>% filter(STDs == '1')
+negative <- data %>% filter(STDs == '0')
+testing <- positive %>% pivot_longer(c('Biopsy','STDs'), names_to = 'Relation', values_to = 'CountR')
+testing<- testing %>% group_by(Relation,CountR) %>% summarise(Count = n())
+testing[1,1] <- 'Not at Risk'
+testing[2,1] <- 'At Risk'
+testing <- testing[-c(3),]
+p1<-ggplot(data=testing, aes(x=Relation,y=Count ,fill= Relation)) +
+  geom_bar(stat="identity") +
+  ylab('Number of Cases') +
+  ggtitle("Cases with STDs") + theme(legend.position="none") +
+  scale_y_continuous(breaks = seq(0, 80, by = 10)) +
+  scale_fill_manual(values = c("#AA336A", "#FF69B4"))
+
+
+testing <- negative %>% pivot_longer(c('Biopsy','STDs'), names_to = 'Relation', values_to = 'CountR')
+testing<- testing %>% group_by(Relation,CountR) %>% summarise(Count = n())
+testing[1,1] <- 'Not at Risk'
+testing[2,1] <- 'At Risk'
+testing[3,1] <- 'No STDs'
+testing <- testing[-c(3),]
+p2<-ggplot(data=testing, aes(x=Relation,y=Count ,fill= Relation)) +
+  geom_bar(stat="identity") +
+  ylab('Number of Cases') +
+  ggtitle("Cases with no STD") + theme(legend.position="none") +
+  scale_y_continuous(breaks = seq(0, 800, by = 100)) +
+  scale_fill_manual(values = c("#AA336A", "#FF69B4"))
+
+grid.arrange(p1,p2, nrow=1, ncol=2)
+
+```
+
+The above graphs are a comparative study about the impact of having STDs and being at risk of cervical cancer. In the plot displaying the distribution of patients with STDs we can see that the rate of At Risk patients is much higher than the plot that shows the distribution of patients without STDs. To quantify this comparison: 15.2 percent of people with an STD are at risk of Cervical cancer. On the contrary, only 5.5 percent of people without an STD are at risk of cervical cancer.Having an STD makes it almost 3 times more likely to be at risk of getting cervical cancer, making STDs a major contributing factor for at risk patients.
+
+
+#### Section-3: Medical Examinations
+
+#### How accurate are the prediction results of different medical examinations? Do they differ? 
+
+The medical examinations used to diagnose Cervical Cancer are Schiller, Hinselmann, Citology and Biopsy.
+
+```{r,echo=FALSE, warning=FALSE, message=FALSE}
+df_4 <- data
+
+df_4 <- df_4 %>%
+  pivot_longer(c(31:34), names_to = "Examination", values_to = "Status", values_drop_na = TRUE) %>%
+  filter(Status=="1") %>%
+  arrange(desc(Examination))
+
+ggplot(df_4, aes(x = Age, y = Examination, fill = Examination)) +
+  geom_density_ridges(scale=3) + 
+  theme_ridges() +
+  theme(legend.position = "none")+
+  scale_x_continuous(breaks = seq(0, 70, 5), 
+                     limits=c(0, 70), expand = c(0,0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  coord_cartesian(clip = "off") +
+  scale_fill_manual(values = c("#F8C8DC", "#E37383", "#DA70D6", "#AA336A"))+
+  ggtitle("Density estimates of different test methods")
+```
+
+Density plots of different medical examinations are generated for patients having risk of cervical cancer. All these show variations between the age of 17-23 years. As we have discussed in Section-1, having first sexual intercourse at age below 20 years is one of the factors.
+
+
+It is clear that there is not much variation between these plots, as they have different medical procedures to declare results. Here the most common method for detecting cervical cancer is by taking "Biopsy" test of the tissue. However other tests are not too bad either. 
+
+
+However women may get just one medical test or a combination of these depending on the recommendations of the doctors. The best medical examination to adopt depends on several other factors, including what stage of cancer a women has. 
+
+
+#### What are the most effective tests for detecting cervical cancer?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+create_pie_charts <- function(data, colors = c("#FFB6C1", "#FF69B4", "#FF00FF")) {
+  # Define variables for analysis
+  vars <- c("Hinselmann", "Citology", "Biopsy")
+  
+  # Create empty vectors to store positive and negative cases
+  positive_cases <- numeric(length(vars))
+  negative_cases <- numeric(length(vars))
+  
+  # Calculate number of positive and negative cases for each variable
+  for (i in 1:length(vars)) {
+    contingency_table <- table(data[[vars[i]]])
+    positive_cases[i] <- sum(contingency_table[2])
+    negative_cases[i] <- sum(contingency_table[1])
+  }
+  
+  # Create pie chart for positive cases
+  labels <- paste0(c("Hinselmann\n", "Citology\n", "Biopsy\n"), 
+                   round(positive_cases / sum(positive_cases) * 100, 1), "%")
+  pie(positive_cases, labels = labels, 
+      main = "Positive Cases", col = colors)
+  
+  # Create pie chart for negative cases
+  labels <- paste0(c("Hinselmann\n", "Citology\n", "Biopsy\n"), 
+                   round(negative_cases / sum(negative_cases) * 100, 1), "%")
+  pie(negative_cases, labels = labels, 
+      main = "Negative Cases", col = colors)
+}
+par(mfrow=c(1,2))
+create_pie_charts(data, colors = c("#FFB6C1", "#FF69B4", "#FF00FF")) 
+```
+
+The Hinselmann, Citology, and Biopsy tests are all important medical tests used to screen for various types of cancer, including cervical cancer. The pie charts help to illustrate the number of positive and negative cases for these tests.
+
+In general, a high number of negative cases is a positive outcome for the individual being tested, as it suggests that there are no signs of cancer or abnormal cells. However, a positive result can indicate the presence of abnormal cells or other signs of cancer, which may require further testing or treatment.
+
+The proportion of positive cases in the Biopsy test is relatively higher than the Hinselmann and Citology tests, which may indicate that the Biopsy test is more effective at identifying cancerous or pre-cancerous cells.
+
+Overall, the pie charts can help medical professionals and researchers to understand the distribution of positive and negative cases for these important medical tests, which can guide decision-making and further research.
+
+
+### 4. Conclusion:
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+factors <- data %>% pivot_longer(c('Smokes','Hormonal.Contraceptives','IUD','STDs','Dx.HPV','Dx.Cancer'), names_to = 'Factors.Responsible', values_to = 'Cases')
+factors <-  factors %>% filter(Biopsy == '1' & Cases == '1')
+factors <- factors %>% group_by(Factors.Responsible) %>% summarise(Positive = n())
+factors['Percentage'] <- c('Previous Cancer: 7.6%','HPV Infection: 7.6%','Hormonal Contraceptives: 45.5%','Use of IUD: 11.3%','History of STDs: 15.3%','Smoking: 12.7%')
+
+ggplot(factors, aes(area=Positive, label=Percentage, fill=Percentage)) +
+  geom_treemap() +
+  ggtitle("Most common conditions found in At-Risk Patients") +
+  geom_treemap_text(colour = "#FFF5EE", place = "centre") +
+  scale_fill_manual(values = c( "#CF9FFF", "#BF40BF","#800080","#FF10F0", "#811331" ,"#7F00FF","#811331","#FF7F50")) +  
+  theme(legend.position="none") 
+
+```
+
+Cervical Cancer has several risk factors and they've been categorized and analyzed in this report. The above treemap serves the purpose of concluding this report by summarizing and quantifying the most common risk factors that have been observed in patients at risk of cervical cancer. Hormonal contraceptives being the most common factor found between at risk patients, taking these pills for more than 5-10 years exponentially increases the risk of cervical cancer. Followed by Smoking, use of IUDs and having a history of STDs. Despite the dimensional restrictions of this dataset, the conclusions drawn are well in-line with the prevalence of the subject. There are a variety of tests available for detecting cervical cancer with Biopsy being the best method. However, as we studied in section 3, a person can pick any test that they feel comfortable with as long as they get tested and diagnose cancer in it's early stages to seek proper treatment.
+
+
+
+### 5. References:
+
+-> https://www.kaggle.com/datasets/loveall/cervical-cancer-risk-classification
+
+-> https://lovelacecancercenter.com/blog/risk-factors-cervical-cancer#:~:text=Multiple%20pregnancies,until%2025%20years%20or%20older.
+
+-> https://www.cancer.org/cancer/cervical-cancer/causes-risks-prevention/risk-factors.html 
+
+-> https://www.healthywomen.org/condition/stages-of-cervical-cancer
